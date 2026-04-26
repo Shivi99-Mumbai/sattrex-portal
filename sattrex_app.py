@@ -2,162 +2,156 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+from datetime import datetime
 
-# --- PAGE SETUP ---
-st.set_page_config(page_title="Sattrex Capital Elite", layout="wide")
+# --- SYSTEM SETTINGS ---
+st.set_page_config(page_title="Sattrex Elite | Portfolio OS", layout="wide")
 
-# --- ADVANCED UI STYLING (EXECUTIVE DARK THEME) ---
+# --- EXECUTIVE UI STYLING ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-    .main { background-color: #f1f3f6; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap');
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
     
-    /* Premium Metric Cards */
-    .metric-card {
-        background: white; padding: 25px; border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05); border-bottom: 5px solid #1e3d59;
-        transition: transform 0.3s ease; height: 100%;
+    /* Modern Glass Cards */
+    .glass-card {
+        background: white; padding: 25px; border-radius: 24px;
+        box-shadow: 0 15px 35px rgba(30, 61, 89, 0.05); border: 1px solid rgba(255,255,255,0.3);
+        margin-bottom: 25px;
     }
-    .metric-card:hover { transform: translateY(-5px); }
-    .label { color: #8e9aaf; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
-    .value { color: #1e3d59; font-size: 26px; font-weight: 700; margin-top: 5px; }
+    
+    /* Luxury Metrics */
+    .metric-title { color: #8e9aaf; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+    .metric-value { color: #1e3d59; font-size: 32px; font-weight: 700; margin: 5px 0; }
+    
+    /* Pulsing Recommendation Bar */
+    @keyframes attention { 
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(30, 61, 89, 0.4); }
+        70% { transform: scale(1.01); box-shadow: 0 0 0 10px rgba(30, 61, 89, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(30, 61, 89, 0); }
+    }
+    .intel-bar {
+        background: linear-gradient(90deg, #1e3d59 0%, #3a7ca5 100%);
+        color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px;
+        animation: attention 3s infinite ease-in-out; border-left: 8px solid #00cc66;
+    }
 
-    /* Pulsing Notification Alert */
-    @keyframes pulse { 
-        0% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.7); }
-        70% { box-shadow: 0 0 0 15px rgba(255, 75, 75, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0); }
-    }
-    .notif-pulse {
-        background-color: #ff4b4b; color: white; padding: 18px; border-radius: 12px;
-        animation: pulse 2s infinite; font-weight: bold; margin-bottom: 25px;
-        display: flex; justify-content: space-between; align-items: center;
-    }
-
-    /* Action Buttons */
-    .btn-pay {
-        background-color: #00cc66 !important; color: white !important;
-        font-weight: bold; border-radius: 12px; padding: 15px; text-decoration: none;
-        display: block; text-align: center; font-size: 18px; margin-bottom: 12px;
-        box-shadow: 0 4px 10px rgba(0,204,102,0.3);
-    }
-    .btn-advisor {
-        background-color: #1e3d59 !important; color: white !important;
-        font-weight: bold; border-radius: 10px; padding: 12px; text-decoration: none;
-        display: block; text-align: center; margin-bottom: 10px; font-size: 15px;
-    }
+    /* Professional Buttons */
+    .btn-main { background-color: #1e3d59; color: white; padding: 15px; border-radius: 12px; display: block; text-align: center; text-decoration: none; font-weight: 700; margin-bottom: 10px; }
+    .btn-pay { background-color: #00cc66; color: white; padding: 15px; border-radius: 12px; display: block; text-align: center; text-decoration: none; font-weight: 700; font-size: 18px; box-shadow: 0 5px 15px rgba(0,204,102,0.3); }
     </style>
 """, unsafe_allow_html=True)
 
-# --- DATA ENGINE ---
+# --- INTELLIGENT DATA ENGINE ---
 @st.cache_data
-def load_data():
+def load_and_clean():
     df = pd.read_excel("sample test.xlsx")
-    # Comprehensive cleaning of all data points
-    cols = ['Risk Coverage', 'Premium Amount', 'Maturity Amount', 'Maturity Year']
-    for col in cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+    numeric_cols = ['Risk Coverage', 'Premium Amount', 'Maturity Amount', 'Maturity Year', 'Age at Maturity']
+    for col in numeric_cols:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
     return df
 
-df = load_data()
+df = load_and_clean()
 
-# --- SIDEBAR & AUTH ---
+# --- AUTHENTICATION ---
 st.sidebar.image("logo.png", width=220)
-st.sidebar.markdown("---")
-email = st.sidebar.text_input("Sattrex VIP ID (Email)")
-otp = st.sidebar.text_input("Enter Access Code", type="password")
+st.sidebar.markdown("### 🔒 Secure Vault")
+email = st.sidebar.text_input("Client ID")
+otp = st.sidebar.text_input("Access Key (OTP)", type="password")
 
 if email and otp == "123456":
-    data = df[df['Login_Email'].str.contains(email, na=False, case=False)]
+    user_data = df[df['Login_Email'].str.contains(email, na=False, case=False)]
     
-    if not data.empty:
-        client = data['Main Account'].iloc[0]
+    if not user_data.empty:
+        client_name = user_data['Main Account'].iloc[0]
         
-        # --- TOP HEADER & PAY BUTTON ---
-        c_head, c_btn = st.columns([3, 1.2])
-        with c_head:
-            st.title(f"Strategic Portfolio of {client}")
-            st.markdown(f"**Advisor:** Vinod Gupta | **Firm:** Sattrex Capital")
-        
-        with c_btn:
+        # --- TOP SECTION: IDENTITY & GLOBAL PAY ---
+        col_id, col_action = st.columns([3, 1])
+        with col_id:
+            st.title(f"Hello, {client_name}")
+            st.markdown(f"**Advisor Executive:** Vinod Gupta | Sattrex Capital")
+        with col_action:
             st.markdown('<a href="https://ebiz.licindia.in/D2CPM/#DirectPay" target="_blank" class="btn-pay">💳 PAY PREMIUM NOW</a>', unsafe_allow_html=True)
 
-        # --- PULSING ATTENTION NOTIFICATION ---
-        st.markdown(f"""
-            <div class="notif-pulse">
-                <span>🔔 ATTENTION: Portfolio has {len(data)} active entries. Next major milestone in {int(data['Maturity Year'].max())}.</span>
-                <span style="font-size: 12px; border: 1px solid white; padding: 2px 8px; border-radius: 5px;">URGENT</span>
-            </div>
-        """, unsafe_allow_html=True)
-
-        # --- ANALYTICAL GRAPHS SECTION ---
-        st.markdown("### 📊 Wealth Analytics & Forecast")
-        col_forecast, col_breakdown = st.columns([2, 1])
-
-        with col_forecast:
-            # Maturity Timeline Analysis
-            timeline_data = data.groupby('Maturity Year')['Maturity Amount'].sum().reset_index()
-            timeline_data = timeline_data[timeline_data['Maturity Year'] > 0]
-            fig_timeline = px.area(timeline_data, x='Maturity Year', y='Maturity Amount',
-                                  title="Wealth Maturity Projection",
-                                  color_discrete_sequence=['#1e3d59'])
-            fig_timeline.update_layout(height=350, plot_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_timeline, use_container_width=True)
-
-        with col_breakdown:
-            # Category Wise Breakdown
-            status_counts = data['Status'].value_counts()
-            fig_pie = px.pie(values=status_counts.values, names=status_counts.index, 
-                            title="Portfolio Composition",
-                            hole=0.6, color_discrete_sequence=['#1e3d59', '#3a7ca5', '#d1d8e0'])
-            fig_pie.update_layout(height=350, showlegend=False)
-            st.plotly_chart(fig_pie, use_container_width=True)
-
-        # --- FAMILY COVERAGE CARDS ---
-        st.markdown("### 🛡️ Coverage Metrics")
-        m1, m2, m3, m4 = st.columns(4)
-        with m1:
-            st.markdown(f'<div class="metric-card"><div class="label">Total Risk Value</div><div class="value">₹{data["Risk Coverage"].sum():,.0f}</div></div>', unsafe_allow_html=True)
-        with m2:
-            st.markdown(f'<div class="metric-card"><div class="label">Annual Commitment</div><div class="value">₹{data["Premium Amount"].sum():,.0f}</div></div>', unsafe_allow_html=True)
-        with m3:
-            st.markdown(f'<div class="metric-card"><div class="label">Guaranteed Payouts</div><div class="value">₹{data["Maturity Amount"].sum():,.0f}</div></div>', unsafe_allow_html=True)
-        with m4:
-            st.markdown(f'<div class="metric-card"><div class="label">Portfolio Items</div><div class="value">{len(data)} Policies</div></div>', unsafe_allow_html=True)
-
-        st.write("---")
-
-        # --- PROTECTION SCORE & ACTION CENTER ---
-        col_g, col_a = st.columns([2, 1])
+        # --- DYNAMIC INTELLIGENCE (LOGIC-BASED RECOMMENDATIONS) ---
+        total_risk = user_data['Risk Coverage'].sum(skipna=True)
+        max_maturity = user_data['Maturity Year'].max()
         
-        with col_g:
-            score = min(int((data['Risk Coverage'].sum() / 5000000) * 100), 100)
+        st.markdown('<div class="intel-bar">', unsafe_allow_html=True)
+        # Recommendation 1: Underinsured check
+        if total_risk < 10000000:
+            st.markdown("🚀 **STRATEGIC GAP:** Your total life value is currently below our VIP benchmark of ₹1Cr. Protect your family's future with a Sum Assured Top-up.")
+        # Recommendation 2: Maturity opportunity
+        elif max_maturity > 0:
+            st.markdown(f"💰 **LIQUIDITY ALERT:** Large maturities are scheduled for {int(max_maturity)}. Let's plan your Mutual Fund reinvestment strategy now to avoid tax leakage.")
+        # Recommendation 3: Age-based (General)
+        st.markdown("📈 **OPPORTUNITY:** Reviewing your asset mix—consider shifting 20% to Equity Mutual Funds for aggressive wealth creation.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # --- SECTION 1: KEY PERFORMANCE CARDS ---
+        st.markdown("### 🏛️ Portfolio Snapshot")
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            st.markdown(f'<div class="glass-card"><span class="metric-title">Total Life Value</span><div class="metric-value">₹{total_risk:,.0f}</div></div>', unsafe_allow_html=True)
+        with k2:
+            st.markdown(f'<div class="glass-card"><span class="metric-title">Annual Savings</span><div class="metric-value">₹{user_data["Premium Amount"].sum():,.0f}</div></div>', unsafe_allow_html=True)
+        with k3:
+            st.markdown(f'<div class="glass-card"><span class="metric-title">Guaranteed Wealth</span><div class="metric-value">₹{user_data["Maturity Amount"].sum():,.0f}</div></div>', unsafe_allow_html=True)
+        with k4:
+            active_count = len(user_data[user_data['Status'].str.contains('IN FORCE', na=False, case=False)])
+            st.markdown(f'<div class="glass-card"><span class="metric-title">Active Assets</span><div class="metric-value">{active_count} Policies</div></div>', unsafe_allow_html=True)
+
+        # --- SECTION 2: INTERACTIVE MODERN GRAPHS (THE MIDDLE SECTION) ---
+        st.write("---")
+        st.markdown("### 📊 Interactive Wealth Analytics")
+        g_left, g_right = st.columns([2, 1])
+        
+        with g_left:
+            # High-end Maturity Forecast
+            timeline = user_data.groupby('Maturity Year')['Maturity Amount'].sum().reset_index()
+            timeline = timeline[timeline['Maturity Year'] > 0]
+            fig_bar = px.bar(timeline, x='Maturity Year', y='Maturity Amount', 
+                             title="Family Maturity Forecast (Annual Cashflows)",
+                             template="plotly_white", color_discrete_sequence=['#1e3d59'])
+            fig_bar.update_layout(bargap=0.4, plot_bgcolor='rgba(0,0,0,0)', yaxis_title="Payout Amount (₹)")
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+        with g_right:
+            # Modern Gauge / Score
+            score = min(int((total_risk / 7500000) * 100), 100)
             fig_gauge = go.Figure(go.Indicator(
                 mode = "gauge+number", value = score,
-                gauge = {
-                    'axis': {'range': [None, 100]},
-                    'bar': {'color': "#1e3d59"},
-                    'steps': [{'range': [0, 50], 'color': '#fff0f0'}, {'range': [50, 100], 'color': '#f0fff0'}]
-                },
-                title = {'text': "Protection Audit Score", 'font': {'size': 18, 'color': '#8e9aaf'}}))
+                gauge = {'axis': {'range': [None, 100]}, 'bar': {'color': "#1e3d59"},
+                         'steps': [{'range': [0, 50], 'color': "#ffecec"}, {'range': [50, 100], 'color': "#e8f5e9"}]},
+                title = {'text': "Insured Score", 'font': {'size': 20}}))
             fig_gauge.update_layout(height=350, margin=dict(t=50, b=0))
             st.plotly_chart(fig_gauge, use_container_width=True)
 
-        with col_a:
-            st.markdown("### ⚡ Executive Actions")
-            st.markdown('<a href="tel:9892027934" class="btn-advisor">📞 TALK TO ADVISOR</a>', unsafe_allow_html=True)
-            st.markdown('<a href="tel:9892027934" class="btn-advisor" style="background-color: white !important; color: #1e3d59 !important; border: 1px solid #1e3d59 !important;">🚀 IMPROVE MY SCORE</a>', unsafe_allow_html=True)
-            
-            # Interactive Data Insights
-            st.info(f"**Insight:** Your next significant payout is scheduled for the year {int(data['Maturity Year'].mode()[0]) if not data['Maturity Year'].empty else 'N/A'}.")
+        # --- SECTION 3: FAMILY ACTION CENTER ---
+        st.markdown("### ⚡ Executive Suite")
+        a1, a2, a3 = st.columns(3)
+        with a1:
+            st.markdown('<a href="tel:9892027934" class="btn-main">📞 CALL VINOD GUPTA</a>', unsafe_allow_html=True)
+        with a2:
+            st.markdown('<a href="tel:9892027934" class="btn-main" style="background:#fff; color:#1e3d59; border:1px solid #1e3d59;">🚀 IMPROVE MY SCORE</a>', unsafe_allow_html=True)
+        with a3:
+            csv = user_data.to_csv(index=False).encode('utf-8')
+            st.download_button(label="📄 DOWNLOAD ANALYTICAL REPORT", data=csv, file_name=f"{client_name}_Sattrex_Audit.csv", use_container_width=True)
 
-        # --- FULL TABLE WITH ALL DATA ---
-        st.markdown("### 📑 Detailed Family Portfolio Inventory")
-        display_df = data[['Policy Holder', 'Policy No', 'Plan', 'Mode', 'Due Month', 'Premium Amount', 'Risk Coverage', 'Maturity Amount', 'Maturity Year', 'Status']]
+        # --- SECTION 4: FULL DATA INVENTORY (NO ZEROS) ---
+        st.write("---")
+        st.markdown("### 📋 Detailed Asset Inventory")
+        # Cleaning display data: Replace 0 or NaN with "Not Available"
+        display_df = user_data[['Policy Holder', 'Policy No', 'Plan', 'Mode', 'Premium Amount', 'Risk Coverage', 'Maturity Amount', 'Maturity Year', 'Status']].copy()
+        
+        # This part ensures clients aren't scared by 0s
+        for col in display_df.columns:
+            display_df[col] = display_df[col].apply(lambda x: "Not Available" if (x == 0 or pd.isna(x)) else x)
+        
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
     else:
-        st.error("Credential Error: Data not found for this Email ID.")
+        st.error("Authentication Error: Record not found in Elite Database.")
 else:
-    st.info("Log in to the Sattrex Digital Notebook using your VIP Credentials.")
+    st.title("Sattrex Capital | Portfolio OS")
+    st.info("Authorized Personnel Only. Please log in to access the Family Office Dashboard.")
