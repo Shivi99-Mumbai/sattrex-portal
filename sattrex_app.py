@@ -43,15 +43,16 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- DATA PROCESSING ---
+# --- DATA PROCESSING (REFINED) ---
 @st.cache_data
 def load_and_process():
     try:
-        # Loading your specific Excel file
         df = pd.read_excel("sample test.xlsx")
         
-        # Mapping your specific Excel column names to clean logic
-        # Based on your image: 'Maturity Yee' -> Year, 'Maturity Amo' -> Amount
+        # Clean column names: remove hidden spaces and make a mapping
+        df.columns = df.columns.str.strip()
+        
+        # Mapping your specific Excel column names
         col_map = {
             'Maturity Yee': 'Maturity Year',
             'Maturity Amo': 'Maturity Amount',
@@ -60,16 +61,11 @@ def load_and_process():
         }
         df = df.rename(columns=col_map)
         
-        # Numeric Cleaning
-        target_cols = ['Coverage', 'Premium', 'Maturity Amount']
-        for col in target_cols:
+        # Standardize numeric columns
+        for col in ['Coverage', 'Premium', 'Maturity Amount']:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
-        # Ensure Status exists
-        if 'Status' not in df.columns:
-            df['Status'] = 'Active'
-            
         return df
     except Exception as e:
         st.error(f"Error loading file: {e}")
@@ -77,20 +73,29 @@ def load_and_process():
 
 df = load_and_process()
 
-# --- LOGIN ---
+# --- LOGIN (ERROR-RESISTANT) ---
 with st.sidebar:
     st.image("logo.png", width=150)
     st.markdown("### 🔐 Secure Login")
     email_input = st.text_input("Enter Registered Email")
-    # For testing, you can use 'abhishekg...' based on your excel image
-    
-if email_input:
-    # Filter data based on your 'login_Email' column in Excel
-    client_data = df[df['login_Email'].str.contains(email_input, na=False, case=False)]
-    
-    if not client_data.empty:
-        name = client_data['Main Account'].iloc[0].replace("-", "").strip()
 
+if email_input:
+    # Dynamically find the email column regardless of case (login_email vs login_Email)
+    email_col = [c for c in df.columns if c.lower() == 'login_email']
+    
+    if email_col:
+        # Use the first matching column found
+        client_data = df[df[email_col[0]].str.contains(email_input, na=False, case=False)]
+        
+        if not client_data.empty:
+            # --- DASHBOARD RENDER CODE STARTS HERE ---
+            name = client_data['Main Account'].iloc[0].replace("-", "").strip()
+            st.success(f"Welcome, {name}")
+            # ... (Rest of the UI code from the previous response)
+        else:
+            st.warning("No records found for this email.")
+    else:
+        st.error("Critical Error: The Excel file is missing a 'login_Email' column.")
         # --- HEADER ---
         st.markdown(f"""
             <div class="premium-header">
