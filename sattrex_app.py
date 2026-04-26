@@ -1,223 +1,229 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 from datetime import datetime
 
 # --- CORE CONFIG ---
 st.set_page_config(page_title="Sattrex Capital | Family Office", layout="wide", initial_sidebar_state="expanded")
 
-# --- HIGH-END UI STYLING ---
+# --- PREMIUM FINTECH CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
     
-    /* Header & Navbar */
+    /* Premium Header */
     .premium-header {
-        background-color: white; padding: 1.2rem 2rem; border-bottom: 1px solid #E2E8F0;
+        background-color: white; padding: 1.5rem 2rem; border-bottom: 1px solid #E2E8F0;
         display: flex; justify-content: space-between; align-items: center;
-        margin: -4rem -4rem 2rem -4rem;
+        margin: -4rem -4rem 1rem -4rem;
     }
     .advisor-card {
         background: #F1F5F9; padding: 8px 16px; border-radius: 12px;
         display: flex; align-items: center; gap: 10px;
     }
 
-    /* Cards & Insights */
+    /* Pulsating Notification */
+    .pulse-container {
+        background: #EFF6FF; border: 1px solid #DBEAFE; border-radius: 12px;
+        padding: 12px 20px; margin-bottom: 25px; display: flex; align-items: center;
+        animation: pulse-blue 3s infinite;
+    }
+    @keyframes pulse-blue {
+        0% { box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.1); }
+        70% { box-shadow: 0 0 0 10px rgba(30, 58, 138, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(30, 58, 138, 0); }
+    }
+
+    /* Card Styling */
     .f-card {
         background: white; padding: 24px; border-radius: 16px;
         box-shadow: 0 4px 20px rgba(30, 58, 138, 0.05);
         border: 1px solid #F1F5F9; margin-bottom: 20px;
     }
-    .insight-card {
-        background: white; border-radius: 16px; padding: 20px;
-        border-left: 6px solid #1E3A8A; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-        margin-bottom: 15px;
-    }
-    .fix-btn {
-        background-color: #1E3A8A; color: white !important; padding: 8px 18px;
-        border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;
-        display: inline-block; margin-top: 10px; transition: 0.3s;
-    }
-    .fix-btn:hover { opacity: 0.8; }
+    .status-tag { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+    .tag-green { background: #DCFCE7; color: #15803D; }
+    .tag-red { background: #FEE2E2; color: #B91C1C; }
 
-    /* Tags */
-    .status-tag-well { background: #DCFCE7; color: #15803D; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
-    .status-tag-under { background: #FEE2E2; color: #B91C1C; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+    /* Buttons */
+    .btn-pay {
+        background-color: #10B981; color: white !important; padding: 10px 20px;
+        border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px;
+    }
+    .btn-invest {
+        background-color: #1E3A8A; color: white !important; padding: 12px 24px;
+        border-radius: 8px; text-decoration: none; font-weight: 600; display: block;
+        text-align: center; margin-top: 15px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- DATA PROCESSING ---
+# --- DATA ENGINE ---
 @st.cache_data
-def load_and_process():
+def load_data():
     try:
-        # Load file (assuming it's in the same directory on GitHub)
+        # Load and clean column names immediately
         df = pd.read_excel("sample test.xlsx")
-        
-        # 1. Clean Column Names (Remove spaces/newlines)
         df.columns = df.columns.str.strip()
         
-        # 2. Map Column Names based on your specific Excel structure
-        col_map = {
+        # Mapping specific names from your Excel
+        df = df.rename(columns={
             'Maturity Yee': 'Maturity Year',
             'Maturity Amo': 'Maturity Amount',
             'Premium Amount': 'Premium',
             'Risk Coverage': 'Coverage'
-        }
-        df = df.rename(columns=col_map)
+        })
         
-        # 3. Numeric Cleaning
-        numeric_targets = ['Coverage', 'Premium', 'Maturity Amount', 'Maturity Year']
-        for col in numeric_targets:
+        # Convert types
+        for col in ['Coverage', 'Premium', 'Maturity Amount', 'Maturity Year']:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-        
-        # 4. Global Cleanup
-        df = df.fillna("N/A")
         return df
     except Exception as e:
-        st.error(f"⚠️ Error reading 'sample test.xlsx': {e}")
+        st.error(f"Data Connection Error: {e}")
         return pd.DataFrame()
 
-df = load_and_process()
+df = load_data()
 
-# --- LOGIN LOGIC ---
+# --- LOGIN ---
 with st.sidebar:
-    st.image("logo.png", width=160)
-    st.markdown("---")
-    st.markdown("### 🔒 Client Access")
-    email_input = st.text_input("Registered Email Address").strip().lower()
+    st.image("logo.png", width=150)
+    st.markdown("### 🔒 Private Client Login")
+    email_in = st.text_input("Registered Email").strip().lower()
 
-if email_input:
-    # Find email column dynamically (handles login_email, Login_Email, etc)
-    email_col_list = [c for c in df.columns if c.lower().strip() == 'login_email']
+if email_in:
+    # Find email column dynamically
+    email_col = [c for c in df.columns if c.lower() == 'login_email']
     
-    if email_col_list:
-        email_col = email_col_list[0]
-        client_data = df[df[email_col].astype(str).str.lower().str.contains(email_input, na=False)]
+    if email_col:
+        client_data = df[df[email_col[0]].astype(str).str.lower().str.contains(email_in, na=False)]
         
         if not client_data.empty:
-            # Cleanup Name for display
-            raw_name = str(client_data['Main Account'].iloc[0])
-            display_name = raw_name.split("-")[0].strip().title()
-
-            # --- HEADER ---
+            # Client specific variables
+            raw_name = str(client_data['Main Account'].iloc[0]).split("-")[0].strip().title()
+            total_cov = client_data['Coverage'].sum()
+            total_prem = client_data['Premium'].sum()
+            max_maturity = client_data['Maturity Amount'].max()
+            
+            # --- 1. HEADER ---
             st.markdown(f"""
                 <div class="premium-header">
                     <div>
-                        <h2 style='margin:0; color:#1E3A8A;'>{display_name} | Family Office</h2>
-                        <p style='margin:0; color:#64748B; font-size:13px;'>Last Updated: {datetime.now().strftime('%d %b, %Y')}</p>
+                        <h2 style='margin:0; color:#1E3A8A;'>{raw_name} Family Office</h2>
+                        <p style='margin:0; color:#64748B; font-size:13px;'>Secure Portal • {datetime.now().strftime('%d %b, %Y')}</p>
                     </div>
-                    <div class="advisor-card">
-                        <div style="text-align: right;">
-                            <div style="font-weight:700; color:#1E293B; font-size:14px;">Vinod Gupta</div>
-                            <div style="color:#64748B; font-size:11px;">Senior Advisor</div>
+                    <div style="display:flex; align-items:center; gap:20px;">
+                        <a href="https://ebiz.licindia.in/D2CPM/#DirectPay" class="btn-pay">💳 PAY PREMIUM</a>
+                        <div class="advisor-card">
+                            <div style="text-align: right;">
+                                <div style="font-weight:700; color:#1E293B; font-size:13px;">Vinod Gupta</div>
+                                <div style="color:#64748B; font-size:11px;">Wealth Manager</div>
+                            </div>
+                            <div style="width:36px; height:36px; background:#1E3A8A; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:12px;">VG</div>
                         </div>
-                        <div style="width:38px; height:38px; background:#1E3A8A; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">VG</div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
 
-            # --- NAVIGATION TABS ---
-            tab_prot, tab_wealth, tab_ins = st.tabs(["🛡️ Protection", "💰 Wealth", "📊 Insights"])
+            # --- 2. DYNAMIC INSIGHT NOTIFICATION (Drives Investment) ---
+            insight_msg = ""
+            if any(client_data['Status'] == 'LAPSED'):
+                insight_msg = "⚠️ <b>CRITICAL:</b> Some policies have lapsed. Your risk cover is compromised. Fix now."
+            elif max_maturity > 5000000:
+                insight_msg = f"📈 <b>SATTREX STRATEGY:</b> High maturity of ₹{max_maturity/100000:,.1f}L expected. We recommend a <b>Mutual Fund STP</b> for wealth creation."
+            elif total_cov < 5000000:
+                insight_msg = "🛡️ <b>ADVISORY:</b> Your family is underinsured relative to income. Consider a Term Plan top-up."
+            else:
+                insight_msg = "✅ <b>PORTFOLIO HEALTH:</b> Your assets are well-aligned. Reviewing Mutual Fund SIPs for next quarter."
 
-            with tab_prot:
-                # Top Key Metrics
-                m1, m2, m3, m4 = st.columns(4)
-                tot_cov = client_data['Coverage'].sum()
-                tot_prem = client_data['Premium'].sum()
-                
-                m1.markdown(f'<div class="f-card"><span style="color:#64748B; font-size:11px; font-weight:700;">TOTAL RISK COVER</span><div style="color:#1E3A8A; font-size:24px; font-weight:700;">₹{tot_cov/10000000:,.2f} Cr</div></div>', unsafe_allow_html=True)
-                m2.markdown(f'<div class="f-card"><span style="color:#64748B; font-size:11px; font-weight:700;">ANNUAL PREMIUM</span><div style="color:#1E3A8A; font-size:24px; font-weight:700;">₹{tot_prem/100000:,.2f} L</div></div>', unsafe_allow_html=True)
-                m3.markdown(f'<div class="f-card"><span style="color:#64748B; font-size:11px; font-weight:700;">ACTIVE POLICIES</span><div style="color:#1E3A8A; font-size:24px; font-weight:700;">{len(client_data)}</div></div>', unsafe_allow_html=True)
-                m4.markdown(f'<div class="f-card"><span style="color:#64748B; font-size:11px; font-weight:700;">INSURANCE SCORE</span><div style="color:#10B981; font-size:24px; font-weight:700;">Optimal</div></div>', unsafe_allow_html=True)
+            st.markdown(f"""
+                <div class="pulse-container">
+                    <span style="font-size:20px; margin-right:15px;">💡</span>
+                    <span style="color:#1E3A8A; font-size:14px;">{insight_msg}</span>
+                </div>
+            """, unsafe_allow_html=True)
 
-                col_gauge, col_family = st.columns([1, 2])
+            # --- 3. CORE METRICS ---
+            m1, m2, m3, m4 = st.columns(4)
+            m1.markdown(f'<div class="f-card"><span style="color:#64748B; font-size:11px; font-weight:700;">TOTAL COVERAGE</span><div style="color:#1E3A8A; font-size:24px; font-weight:700;">₹{total_cov/10000000:,.2f} Cr</div></div>', unsafe_allow_html=True)
+            m2.markdown(f'<div class="f-card"><span style="color:#64748B; font-size:11px; font-weight:700;">ANNUAL OUTFLOW</span><div style="color:#1E3A8A; font-size:24px; font-weight:700;">₹{total_prem/100000:,.2f} L</div></div>', unsafe_allow_html=True)
+            m3.markdown(f'<div class="f-card"><span style="color:#64748B; font-size:11px; font-weight:700;">POLICIES</span><div style="color:#1E3A8A; font-size:24px; font-weight:700;">{len(client_data)} Active</div></div>', unsafe_allow_html=True)
+            m4.markdown(f'<div class="f-card"><span style="color:#64748B; font-size:11px; font-weight:700;">MATURITY PROJECTION</span><div style="color:#10B981; font-size:24px; font-weight:700;">₹{client_data["Maturity Amount"].sum()/100000:,.1f} L</div></div>', unsafe_allow_html=True)
+
+            # --- 4. WEALTH & INSIGHTS (SPLIT VIEW) ---
+            c_left, c_right = st.columns([1.8, 1.2])
+            
+            with c_left:
+                st.markdown("### 📊 Wealth & Risk Projection")
+                # Advanced Interactive Graph
+                w_df = client_data[client_data['Maturity Year'] > 0].sort_values('Maturity Year')
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=w_df['Maturity Year'], y=w_df['Maturity Amount'], fill='tozeroy', name='Maturity Value', line=dict(color='#10B981', width=3)))
+                fig.add_trace(go.Bar(x=w_df['Maturity Year'], y=w_df['Coverage'], name='Active Life Cover', marker_color='#1E3A8A', opacity=0.6))
                 
-                with col_gauge:
-                    st.markdown("### Financial Health Score")
-                    # Semi-Circle Gauge (Plotly)
-                    score = 74 
-                    fig = go.Figure(go.Indicator(
-                        mode = "gauge+number", value = score,
-                        gauge = {
-                            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
-                            'bar': {'color': "#1E3A8A"},
-                            'steps': [
-                                {'range': [0, 40], 'color': "#FEE2E2"},
-                                {'range': [41, 70], 'color': "#FEF3C7"},
-                                {'range': [71, 100], 'color': "#D1FAE5"}]}))
-                    fig.update_layout(height=250, margin=dict(t=10, b=0, l=20, r=20), paper_bgcolor='rgba(0,0,0,0)')
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    st.markdown("""
-                        <div class="f-card" style="margin-top:-30px;">
-                            <p style="font-weight:700; color:#1E293B; font-size:14px; margin-bottom:10px;">Improve your score by:</p>
-                            <ul style="font-size:13px; color:#475569; padding-left:18px; line-height:1.6;">
-                                <li>Increasing cover for family members</li>
-                                <li>Reviewing maturing policies in 2029</li>
-                            </ul>
+                fig.update_layout(
+                    hovermode="x unified",
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                    margin=dict(t=0, b=0, l=0, r=0),
+                    height=350,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    yaxis=dict(title="Value (INR)", gridcolor="#F1F5F9")
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+            with c_right:
+                st.markdown("### 🎯 Recommendations")
+                st.markdown(f"""
+                    <div class="f-card" style="background: linear-gradient(145deg, #ffffff, #f8faff); border-left: 5px solid #1E3A8A;">
+                        <h4 style="margin-top:0; color:#1E3A8A;">Mutual Fund Opportunity</h4>
+                        <p style="font-size:13px; color:#475569;">Your maturing policy in {int(w_df['Maturity Year'].min()) if not w_df.empty else '2029'} can be optimized for 12-14% returns via <b>Sattrex Focused Funds</b>.</p>
+                        <a href="tel:9892027934" class="btn-invest">Contact Advisor to Invest</a>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # Small score gauge
+                fig_score = go.Figure(go.Indicator(
+                    mode = "gauge+number", value = 78,
+                    title = {'text': "Portfolio Health", 'font': {'size': 14}},
+                    gauge = {'bar': {'color': "#1E3A8A"}, 'axis': {'range': [0, 100]},
+                             'steps': [{'range': [0, 50], 'color': "#FEE2E2"}, {'range': [50, 100], 'color': "#D1FAE5"}]}))
+                fig_score.update_layout(height=180, margin=dict(t=30, b=0))
+                st.plotly_chart(fig_score, use_container_width=True)
+
+            # --- 5. FAMILY OVERVIEW ---
+            st.markdown("### 👥 Family Coverage Matrix")
+            f_cols = st.columns(3)
+            members = client_data['Policy Holder'].unique()
+            for i, m_name in enumerate(members[:3]): # Showing top 3 members
+                m_rows = client_data[client_data['Policy Holder'] == m_name]
+                m_cov = m_rows['Coverage'].sum()
+                m_count = len(m_rows)
+                is_well = "WELL COVERED" if m_cov > 5000000 else "UNDERINSURED"
+                tag_cls = "tag-green" if is_well == "WELL COVERED" else "tag-red"
+                
+                with f_cols[i]:
+                    st.markdown(f"""
+                        <div class="f-card" style="padding:20px; border-top: 4px solid #1E3A8A;">
+                            <span class="status-tag {tag_cls}">{is_well}</span>
+                            <div style="font-weight:700; color:#1E3A8A; font-size:16px; margin-top:10px;">{m_name}</div>
+                            <div style="font-size:13px; color:#64748B; margin-top:5px;">
+                                Total Risk: ₹{m_cov/100000:,.1f} L<br>
+                                Active Plans: {m_count}
+                            </div>
                         </div>
                     """, unsafe_allow_html=True)
 
-                with col_family:
-                    st.markdown("### Family Member Overview")
-                    f_cols = st.columns(3)
-                    members = client_data['Policy Holder'].unique()
-                    for i, m_name in enumerate(members[:3]):
-                        m_cov = client_data[client_data['Policy Holder'] == m_name]['Coverage'].sum()
-                        is_well = "Well Covered" if m_cov > 4000000 else "Underinsured"
-                        tag_color = "status-tag-well" if is_well == "Well Covered" else "status-tag-under"
-                        
-                        with f_cols[i]:
-                            st.markdown(f"""
-                                <div class="f-card" style="padding:18px; border-top: 5px solid #1E3A8A;">
-                                    <div style="font-weight:700; color:#1E3A8A; font-size:15px; margin-bottom:5px;">{m_name}</div>
-                                    <div style="font-size:12px; color:#64748B; margin-bottom:12px;">Cover: ₹{m_cov/100000:,.1f} L</div>
-                                    <span class="{tag_color}">{is_well}</span>
-                                </div>
-                            """, unsafe_allow_html=True)
-                    
-                    st.markdown("### Actionable Insights")
-                    i1, i2 = st.columns(2)
-                    with i1:
-                        st.markdown("""
-                            <div class="insight-card" style="border-color: #EF4444;">
-                                <div style="font-weight:700; color:#B91C1C; font-size:14px;">High Priority Review</div>
-                                <div style="font-size:12px; color:#475569; margin-top:5px;">A significant gap detected in health cover vs inflation.</div>
-                                <a href="tel:9892027934" class="fix-btn">Fix Now</a>
-                            </div>
-                        """, unsafe_allow_html=True)
-                    with i2:
-                        st.markdown("""
-                            <div class="insight-card" style="border-color: #10B981;">
-                                <div style="font-weight:700; color:#065F46; font-size:14px;">Policy Maturity</div>
-                                <div style="font-size:12px; color:#475569; margin-top:5px;">Policy ending in 2029 is nearing maturity. Plan reinvestment.</div>
-                                <a href="#" class="fix-btn" style="background:#10B981;">Talk to Advisor</a>
-                            </div>
-                        """, unsafe_allow_html=True)
-
-            with tab_wealth:
-                st.markdown("### Maturity & Wealth Projections")
-                w_df = client_data[client_data['Maturity Year'] > 2023].sort_values('Maturity Year')
-                if not w_df.empty:
-                    fig_w = px.area(w_df, x='Maturity Year', y='Maturity Amount', 
-                                    line_shape='spline', color_discrete_sequence=['#1E3A8A'])
-                    fig_w.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                    st.plotly_chart(fig_w, use_container_width=True)
-                else:
-                    st.info("No future maturity data available for projection.")
-
-            with tab_ins:
-                st.markdown("### Policy Repository")
-                # Clean table for display
-                table_df = client_data[['Policy Holder', 'Policy No', 'Plan', 'Premium', 'Coverage', 'Status']].copy()
-                st.dataframe(table_df, use_container_width=True, hide_index=True)
+            # --- 6. DETAILED REPOSITORY ---
+            st.markdown("### 📑 Policy Repository")
+            disp_df = client_data[['Policy Holder', 'Policy No', 'Plan', 'Premium', 'Coverage', 'Status']].copy()
+            st.dataframe(disp_df, use_container_width=True, hide_index=True)
+            
+            st.markdown("<br><p style='text-align:center; color:#94A3B8; font-size:12px;'>Sattrex Capital Family Office Management System v2.1</p>", unsafe_allow_html=True)
 
         else:
-            st.error(f"Access Denied: No data found for '{email_input}'.")
+            st.error("No portfolio found for this email address.")
     else:
-        st.error("System Error: 'login_Email' column missing from data source.")
+        st.error("Data Column 'Login_Email' not detected in Excel.")
 else:
-    st.info("👋 Welcome to Sattrex Capital. Please enter your email in the sidebar to view your portfolio.")
+    st.info("👋 Welcome. Please enter your registered email in the sidebar to securely access your portfolio.")
