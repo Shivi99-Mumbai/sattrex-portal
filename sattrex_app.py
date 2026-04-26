@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Sattrex Capital VIP Portal", layout="wide")
+st.set_page_config(page_title="Sattrex Capital Portal", layout="wide")
 
 # --- CUSTOM CSS FOR FINTECH LOOK ---
 st.markdown("""
